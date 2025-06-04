@@ -49,6 +49,7 @@ module "blog_alb" {
         target_group_key = "ex-target"
       }
     }
+  }
 
     target_groups = {
     ex-target = {
