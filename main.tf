@@ -86,7 +86,7 @@ module "blog_autoscaling" {
   min_size                  = 1
   max_size                  = 2
   health_check_type         = "EC2"
-  vpc_zone_identifier       = module.blog_vpc.private_subnets
+  vpc_zone_identifier       = module.blog_vpc.public_subnets
 
   # Launch template
   launch_template_name        = "app_instance"
