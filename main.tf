@@ -38,8 +38,8 @@ module "blog_autoscaling" {
   min_size  = 1
   max_size  = 2
 
-  vpc_zone_identifie    = module.blog_vpc.public_subnets
-  target_group_arns     = module.blog_alb.target_groups_arns
+  vpc_zone_identifier   = module.blog_vpc.public_subnets
+  #target_group_arns     = module.blog_alb.target_groups_arns
 
   image_id                = data.aws_ami.app_ami.id
   instance_type           = var.instance_type
