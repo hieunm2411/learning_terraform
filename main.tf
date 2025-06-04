@@ -35,8 +35,8 @@ module "blog_autoscaling" {
   version = "6.5.2"
   
   name      = "blog"
-  min_size  = 1
-  max_size  = 2
+  min_size  = 2
+  max_size  = 3
 
   vpc_zone_identifier   = module.blog_vpc.public_subnets
   #target_group_arns     = module.blog_alb.target_groups_arns
