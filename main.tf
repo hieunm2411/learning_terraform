@@ -101,9 +101,11 @@ module "blog_alb" {
   target_groups = {
     instance = {
       name_prefix      = "blog-"
-      protocol = "HTTP"
-      port     = 80
-      target_type      = "instance"
+      backend_protocol                  = "HTTP"
+      backend_port                      = 80
+      target_type                       = "instance"
+      
+      create_attachment = false
     }
   }
 
