@@ -41,23 +41,24 @@ module "blog_alb" {
   subnets            = module.blog_vpc.public_subnets
   security_groups    = [module.blog_sg.security_group_id]
 
-  target_groups = [
-    {
+  listeners = {
+    http = {
+      port     = 80
+      protocol = "HTTP"
+      forward = {
+        target_group_key = "ex-target"
+      }
+    }
+
+    target_groups = {
+    ex-target = {
       name_prefix      = "blog-"
       backend_protocol = "HTTP"
       backend_port     = 80
       target_type      = "instance"
     }
-  ]
+  }
 
-  listeners = [
-    {
-      port               = 80
-      protocol           = "HTTP"
-      target_group_index = 0
-    }
-  ]
-  
   tags = {
     Environment = "dev"
   }
@@ -98,4 +99,9 @@ module "blog_autoscaling" {
 
   # # Security group is set on the ENIs below
   # security_groups          = [module.blog_sg.security_group_id]
+}
+
+resource "aws_autoscaling_attachment" "blog_alb_attachment" {
+  autoscaling_group_name = module.blog_autoscaling.autoscaling_group_id
+  lb_target_group_arn    = module.blog_alb.target_group_arn
 }
