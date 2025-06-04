@@ -82,7 +82,6 @@ module "blog_autoscaling" {
 
   # Autoscaling group
   name                = "blog"
-  instance_name   = "my-instance-name"
 
   min_size                  = 1
   max_size                  = 2
