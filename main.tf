@@ -1,17 +1,12 @@
-data "aws_ami" "app_ami" {
-  most_recent = true
+module "blog_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
 
-  filter {
-    name   = "name"
-    values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["979382823631"] # Bitnami
+  vpc_id  = module.blog_vpc.vpc_id
+  name    = "blog"
+  ingress_rules = ["https-443-tcp","http-80-tcp"]
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules = ["all-all"]
+  egress_cidr_blocks = ["0.0.0.0/0"]
 }
 
 module "blog_vpc" {
@@ -20,59 +15,13 @@ module "blog_vpc" {
   name = "dev"
   cidr = "10.0.0.0/16"
 
-  azs             = ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]
-  
+  azs             = ["us-west-2a","us-west-2b","us-west-2c"]
   public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
 
   tags = {
     Terraform = "true"
-    Environment = "dev"
-  }
-}
-
-module "blog_sg" {
-  source              = "terraform-aws-modules/security-group/aws"
-  version             = "4.13.0"
-  name                = "blog"
-
-  vpc_id              = module.blog_vpc.vpc_id
-  ingress_rules       = ["http-80-tcp","https-443-tcp"]
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-
-  egress_rules        = ["all-all"]
-  egress_cidr_blocks = ["0.0.0.0/0"]
-}
-
-module "blog_alb" {
-  source  = "terraform-aws-modules/alb/aws"
-  version = "~> 6.0"
-
-  name = "blog-alb"
-
-  load_balancer_type = "application"
-
-  vpc_id             = module.blog_vpc.vpc_id
-  subnets            = module.blog_vpc.public_subnets
-  security_groups    = [module.blog_sg.security_group_id]
-
-  target_groups = [
-    {
-      name_prefix      = "blog-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
-      target_type      = "instance"
-    }
-  ]
-
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "HTTP"
-      target_group_index = 0
-    }
-  ]
-
-  tags = {
     Environment = "dev"
   }
 }
@@ -81,27 +30,29 @@ module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
 
   # Autoscaling group
-  name                = "blog"
+  name = "example-asg"
 
-  min_size                  = 1
-  max_size                  = 2
+  min_size                  = 0
+  max_size                  = 1
+  desired_capacity          = 1
+  wait_for_capacity_timeout = 0
   health_check_type         = "EC2"
   vpc_zone_identifier       = module.blog_vpc.public_subnets
+  security_groups    = [module.blog_sg.security_group_id]
+
+  instance_refresh = {
+    strategy = "Rolling"
+  }
 
   # Launch template
-  launch_template_name        = "app_instance"
-  launch_template_description = "Complete launch template example"
+  launch_template_name        = "example-asg"
+  launch_template_description = "Launch template example"
+  update_default_version      = true
 
-  image_id                = data.aws_ami.app_ami.id
-  instance_type           = var.instance_type
+  image_id          = var.app_ami
+  instance_type     = var.instance_type
 
-  # # Security group is set on the ENIs below
-  # security_groups          = [module.blog_sg.security_group_id]
-
-  traffic_source_attachments = {
-    ex-alb = {
-      traffic_source_identifier = module.blog_alb.arn
-      traffic_source_type       = "elbv2"
-    }
+  tags = {
+    Environment = "dev"
   }
 }
