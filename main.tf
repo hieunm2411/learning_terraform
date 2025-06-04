@@ -43,7 +43,7 @@ module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
 
   # Autoscaling group
-  name = "example-asg"
+  name = "blog"
 
   min_size                  = 0
   max_size                  = 1
@@ -58,12 +58,45 @@ module "blog_autoscaling" {
   }
 
   # Launch template
-  launch_template_name        = "example-asg"
+  launch_template_name        = "blog"
   launch_template_description = "Launch template example"
   update_default_version      = true
 
   image_id          = data.aws_ami.app_ami.id
   instance_type     = var.instance_type
+
+  tags = {
+    Environment = "dev"
+  }
+}
+
+module "blog_alb" {
+  source  = "terraform-aws-modules/alb/aws"
+
+  name = "blog-alb"
+
+  load_balancer_type = "application"
+
+  vpc_id             = module.blog_vpc.vpc_id
+  subnets            = module.blog_vpc.public_subnets
+  security_groups    = [module.blog_sg.security_group_id]
+
+  listeners = {
+    ex-http-https-redirect = {
+      port     = 80
+      protocol = "HTTP"
+      target_group_index = 0
+    }
+  }
+
+  target_groups = [
+    {
+      name_prefix      = "blog-"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+    }
+  ]
 
   tags = {
     Environment = "dev"
