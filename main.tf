@@ -101,8 +101,3 @@ module "blog_autoscaling" {
   # # Security group is set on the ENIs below
   # security_groups          = [module.blog_sg.security_group_id]
 }
-
-resource "aws_autoscaling_attachment" "blog_alb_attachment" {
-  autoscaling_group_name = module.blog_autoscaling.autoscaling_group_id
-  lb_target_group_arn    = module.blog_alb.target_group_arn
-}
