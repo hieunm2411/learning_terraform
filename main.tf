@@ -1,3 +1,19 @@
+data "aws_ami" "app_ami" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["979382823631"] # Bitnami
+}
+
 module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
 
@@ -49,7 +65,7 @@ module "blog_autoscaling" {
   launch_template_description = "Launch template example"
   update_default_version      = true
 
-  image_id          = var.app_ami
+  image_id          = data.aws_ami.app_ami.id
   instance_type     = var.instance_type
 
   tags = {
