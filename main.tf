@@ -32,7 +32,7 @@ module "blog_vpc" {
 
 resource "aws_autoscaling_attachment" "blog_alb_attachment" {
   autoscaling_group_name = module.blog_autoscaling.autoscaling_group_id
-  lb_target_group_arn    = module.blog_alb.target_groups_arns[0]
+  lb_target_group_arn    = module.blog_alb.target_group_arns
 }
 
 module "blog_autoscaling" {
