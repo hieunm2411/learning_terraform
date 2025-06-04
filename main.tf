@@ -30,9 +30,15 @@ module "blog_vpc" {
   }
 }
 
-resource "aws_autoscaling_attachment" "blog_alb_attachment" {
-  autoscaling_group_name = module.blog_autoscaling.autoscaling_group_id
-  lb_target_group_arn    = module.blog_alb.target_group_arns
+resource "aws_launch_template" "app_instance" {
+  image_id                = data.aws_ami.app_ami.id
+  instance_type           = var.instance_type
+
+  security_groups  = [module.blog_sg.security_group_id]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 module "blog_autoscaling" {
@@ -44,11 +50,7 @@ module "blog_autoscaling" {
   health_check_type   = "EC2"
   vpc_zone_identifier = module.blog_vpc.public_subnets
 
-  launch_template_name    = "blog-asg"
-  image_id                = data.aws_ami.app_ami.id
-  instance_type           = var.instance_type
-
-  security_groups  = [module.blog_sg.security_group_id]
+  launch_template_id     = aws_launch_template.app_instance.id
 }
 
 module "blog_alb" {
