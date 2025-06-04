@@ -30,41 +30,6 @@ module "blog_vpc" {
   }
 }
 
-module "blog_alb" {
-  source  = "terraform-aws-modules/alb/aws"
-
-  name = "blog-alb"
-
-  load_balancer_type = "application"
-
-  vpc_id             = module.blog_vpc.vpc_id
-  subnets            = module.blog_vpc.public_subnets
-  security_groups    = [module.blog_sg.security_group_id]
-
-  listeners = {
-    http = {
-      port     = 80
-      protocol = "HTTP"
-      forward = {
-        target_group_key = "ex-target"
-      }
-    }
-  }
-
-    target_groups = {
-    ex-target = {
-      name_prefix      = "blog-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
-      target_type      = "instance"
-    }
-  }
-
-  tags = {
-    Environment = "dev"
-  }
-}
-
 module "blog_sg" {
   source              = "terraform-aws-modules/security-group/aws"
   version             = "4.13.0"
@@ -76,6 +41,40 @@ module "blog_sg" {
 
   egress_rules        = ["all-all"]
   egress_cidr_blocks = ["0.0.0.0/0"]
+}
+
+module "blog_alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  #version = "~> 6.0"
+
+  name = "blog-alb"
+
+  load_balancer_type = "application"
+
+  vpc_id             = module.blog_vpc.vpc_id
+  subnets            = module.blog_vpc.public_subnets
+  security_groups    = [module.blog_sg.security_group_id]
+
+  target_groups = [
+    {
+      name_prefix      = "blog-"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+    }
+  ]
+
+  http_tcp_listeners = [
+    {
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
+    }
+  ]
+
+  tags = {
+    Environment = "dev"
+  }
 }
 
 module "blog_autoscaling" {
@@ -93,11 +92,17 @@ module "blog_autoscaling" {
   # Launch template
   launch_template_name        = "app_instance"
   launch_template_description = "Complete launch template example"
-  update_default_version      = true
 
   image_id                = data.aws_ami.app_ami.id
   instance_type           = var.instance_type
 
   # # Security group is set on the ENIs below
   # security_groups          = [module.blog_sg.security_group_id]
+
+  traffic_source_attachments = {
+    ex-alb = {
+      traffic_source_identifier = module.blog_alb.lb_arn
+      traffic_source_type       = "elbv2"
+    }
+  }
 }
