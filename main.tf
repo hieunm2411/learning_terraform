@@ -30,30 +30,6 @@ module "blog_vpc" {
   }
 }
 
-resource "aws_launch_template" "app_instance" {
-  image_id                = data.aws_ami.app_ami.id
-  instance_type           = var.instance_type
-
-  vpc_security_group_ids = [module.blog_sg.security_group_id]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-module "blog_autoscaling" {
-  source  = "terraform-aws-modules/autoscaling/aws"
-  
-  name                = "blog"
-  min_size            = 1
-  max_size            = 2
-  health_check_type   = "EC2"
-  vpc_zone_identifier = module.blog_vpc.public_subnets
-
-  create_launch_template = false
-  launch_template_id     = aws_launch_template.app_instance.id
-}
-
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 6.0"
@@ -99,4 +75,28 @@ module "blog_sg" {
 
   egress_rules        = ["all-all"]
   egress_cidr_blocks = ["0.0.0.0/0"]
+}
+
+module "blog_autoscaling" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+
+  # Autoscaling group
+  name                = "blog"
+  instance_name   = "my-instance-name"
+
+  min_size                  = 1
+  max_size                  = 2
+  health_check_type         = "EC2"
+  vpc_zone_identifier       = module.blog_vpc.private_subnets
+
+  # Launch template
+  launch_template_name        = "app_instance"
+  launch_template_description = "Complete launch template example"
+  update_default_version      = true
+
+  image_id                = data.aws_ami.app_ami.id
+  instance_type           = var.instance_type
+
+  # # Security group is set on the ENIs below
+  # security_groups          = [module.blog_sg.security_group_id]
 }
