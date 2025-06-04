@@ -50,6 +50,7 @@ module "blog_autoscaling" {
   health_check_type   = "EC2"
   vpc_zone_identifier = module.blog_vpc.public_subnets
 
+  create_launch_template = false
   launch_template_id     = aws_launch_template.app_instance.id
 }
 
