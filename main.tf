@@ -32,7 +32,7 @@ module "blog_vpc" {
   cidr = "10.0.0.0/16"
 
   azs             = ["ap-southeast-1a","ap-southeast-1b","ap-southeast-1c"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
 
   tags = {
     Environment = "dev"
@@ -45,9 +45,8 @@ module "blog_autoscaling" {
   # Autoscaling group
   name = "blog autoscaling"
 
-  min_size                  = 0
-  max_size                  = 1
-  desired_capacity          = 1
+  min_size                  = 1
+  max_size                  = 2
   wait_for_capacity_timeout = 0
   health_check_type         = "EC2"
   vpc_zone_identifier       = module.blog_vpc.public_subnets
