@@ -16,19 +16,19 @@ data "aws_ami" "app_ami" {
 
 module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
+  name    = "blog sg"
 
-  vpc_id  = module.blog_vpc.vpc_id
-  name    = "blog"
-  ingress_rules = ["https-443-tcp","http-80-tcp"]
+  vpc_id              = module.blog_vpc.vpc_id
+  ingress_rules       = ["https-443-tcp","http-80-tcp"]
   ingress_cidr_blocks = ["0.0.0.0/0"]
-  egress_rules = ["all-all"]
-  egress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules        = ["all-all"]
+  egress_cidr_blocks  = ["0.0.0.0/0"]
 }
 
 module "blog_vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  name = "dev"
+  name = "blog vpc"
   cidr = "10.0.0.0/16"
 
   azs             = ["ap-southeast-1a","ap-southeast-1b","ap-southeast-1c"]
@@ -43,7 +43,7 @@ module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
 
   # Autoscaling group
-  name = "blog"
+  name = "blog autoscaling"
 
   min_size                  = 0
   max_size                  = 1
@@ -51,23 +51,23 @@ module "blog_autoscaling" {
   wait_for_capacity_timeout = 0
   health_check_type         = "EC2"
   vpc_zone_identifier       = module.blog_vpc.public_subnets
+
   security_groups    = [module.blog_sg.security_group_id]
 
   instance_refresh = {
     strategy = "Rolling"
   }
-
-  # Launch template
-  launch_template_name        = "blog"
-  launch_template_description = "Launch template example"
+  
+  launch_template_name        = "blog-instance"
+  launch_template_description = "Template for blog project's instances"
   update_default_version      = true
 
   image_id          = data.aws_ami.app_ami.id
   instance_type     = var.instance_type
 
   traffic_source_attachments = {
-    ex-alb = {
-      traffic_source_identifier = module.blog_alb.target_groups["instance"].arn
+    blog-alb = {
+      traffic_source_identifier = module.blog_alb.target_groups["blog_instance"].arn
       traffic_source_type       = "elbv2"
     }
   }
@@ -80,33 +80,34 @@ module "blog_autoscaling" {
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
 
-  name = "blog-alb"
+  name = "blog alb"
 
   load_balancer_type = "application"
 
   vpc_id             = module.blog_vpc.vpc_id
   subnets            = module.blog_vpc.public_subnets
   security_groups    = [module.blog_sg.security_group_id]
+
   enable_deletion_protection = false
 
   listeners = {
-    default = {
-      port     = 80
-      protocol = "HTTP"
-      forward = {
-        target_group_key = "instance"
+    http = {
+      port      = 80
+      protocol  = "HTTP"
+      forward   = {
+        target_group_key = "blog_instance"
       }
     }
   }
 
   target_groups = {
-    instance = {
-      name_prefix      = "blog-"
-      backend_protocol                  = "HTTP"
-      backend_port                      = 80
-      target_type                       = "instance"
+    blog_instance = {
+      name_prefix       = "blog-"
+      backend_protocol  = "HTTP"
+      backend_port      = 80
+      target_type       = "instance"
       
-      create_attachment = false
+      #create_attachment = false
     }
   }
 
