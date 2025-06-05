@@ -16,7 +16,7 @@ data "aws_ami" "app_ami" {
 
 module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
-  name    = "blog sg"
+  name    = "${var.environment.name}-sg"
 
   vpc_id              = module.blog_vpc.vpc_id
   ingress_rules       = ["https-443-tcp","http-80-tcp"]
@@ -28,7 +28,7 @@ module "blog_sg" {
 module "blog_vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  name = "blog vpc"
+  name = "${var.environment.name}-vpc"
   cidr = "${var.environment.network_prefix}.0.0/16"
 
   azs             = ["ap-southeast-1a","ap-southeast-1b","ap-southeast-1c"]
@@ -43,7 +43,7 @@ module "blog_autoscaling" {
   source  = "terraform-aws-modules/autoscaling/aws"
 
   # Autoscaling group
-  name = "blog autoscaling"
+  name = "${var.environment.name}-autoscaling"
 
   min_size                  = var.asg_min_size
   max_size                  = var.asg_max_size
@@ -56,7 +56,7 @@ module "blog_autoscaling" {
     strategy = "Rolling"
   }
   
-  launch_template_name        = "blog-instance"
+  launch_template_name        = "${var.environment.name}-instance"
   launch_template_description = "Template for blog project's instances"
   update_default_version      = true
 
@@ -78,7 +78,7 @@ module "blog_autoscaling" {
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
 
-  name = "blogalb"
+  name = "${var.environment.name}alb"
 
   load_balancer_type = "application"
 
