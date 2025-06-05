@@ -24,7 +24,7 @@ variable "environment" {
   })
   default           = {
     name            = "qa"
-    network_prefix  = "10.0.12"
+    network_prefix  = "10.0"
   }
 }
 
