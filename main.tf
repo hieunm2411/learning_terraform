@@ -80,7 +80,7 @@ module "blog_autoscaling" {
 module "blog_alb" {
   source  = "terraform-aws-modules/alb/aws"
 
-  name = "blog alb"
+  name = "blogalb"
 
   load_balancer_type = "application"
 
@@ -107,7 +107,7 @@ module "blog_alb" {
       backend_port      = 80
       target_type       = "instance"
       
-      #create_attachment = false
+      create_attachment = false
     }
   }
 
